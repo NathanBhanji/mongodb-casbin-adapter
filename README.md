@@ -25,16 +25,18 @@ async function setupEnforcer() {
     uri: 'mongodb://localhost:27017',
     database: 'casbin',
     collection: 'policies',
+    dropCollectionOnManualSave: false,
+    /* Default is false, set to true if you want to drop the collection when savePolicy is called */
     options: {
       /* MongoDB client options */
     },
   });
 
   const enforcer = await newEnforcer('path/to/model.conf', adapter);
-  
   // Now you can use the enforcer
   const allowed = await enforcer.enforce('alice', 'data1', 'read');
   console.log(allowed ? 'Allow' : 'Deny');
 }
 
 setupEnforcer();
+```

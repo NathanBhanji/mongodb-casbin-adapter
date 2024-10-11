@@ -47,6 +47,7 @@ export class MongoAdapter
   private readonly databaseName: string;
   private readonly mongoClient: MongoClient;
   private readonly collectionName: string;
+  private readonly dropCollectionOnManualSave: boolean;
   public useFilter: boolean = false;
 
   constructor(
@@ -55,6 +56,7 @@ export class MongoAdapter
     collection: string,
     filtered: boolean = false,
     options?: MongoClientOptions,
+    dropCollectionOnManualSave: boolean = false,
   ) {
     if (!uri) {
       throw new Error(
@@ -65,6 +67,7 @@ export class MongoAdapter
     this.databaseName = database;
     this.collectionName = collection;
     this.useFilter = filtered;
+    this.dropCollectionOnManualSave = dropCollectionOnManualSave;
 
     try {
       this.mongoClient = new MongoClient(uri, options);
@@ -80,13 +83,15 @@ export class MongoAdapter
     options,
     database,
     collection,
-    filtered = false,
+    filtered,
+    dropCollectionOnManualSave,
   }: {
     uri: string;
     options?: MongoClientOptions;
     database: string;
     collection: string;
     filtered?: boolean;
+    dropCollectionOnManualSave?: boolean;
   }): Promise<MongoAdapter> {
     const adapter = new MongoAdapter(
       uri,
@@ -94,6 +99,7 @@ export class MongoAdapter
       collection,
       filtered,
       options,
+      dropCollectionOnManualSave,
     );
     await adapter.open();
     return adapter;
@@ -363,6 +369,10 @@ export class MongoAdapter
         .toArray();
 
       if (list && list.length > 0) {
+        if (this.dropCollectionOnManualSave) {
+          await this.getCollection().drop();
+          return;
+        }
         await this.getCollection().deleteMany({});
       }
     } catch (error) {
