@@ -120,14 +120,14 @@ export class MongoAdapter
   }
 
   /**
-   * loadPolicy loads all policy rules from the storage.
+   * loadPolicy loads all policy rules from the database.
    */
   public async loadPolicy(model: Model) {
     await this.loadFilteredPolicy(model);
   }
 
   /**
-   * loadPolicy loads filtered policy rules from the storage.
+   * loadPolicy loads filtered policy rules from the database.
    */
   public async loadFilteredPolicy(model: Model, filter?: Filter<unknown>) {
     try {
@@ -141,7 +141,7 @@ export class MongoAdapter
   }
 
   /**
-   * savePolicy deletes all existing policy from storage and saves the current policy state to the storage.
+   * savePolicy deletes all existing policy from database and saves the current policy state to the database.
    */
   public async savePolicy(model: Model): Promise<boolean> {
     await this.clearCollection();
