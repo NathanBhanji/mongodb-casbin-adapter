@@ -36,6 +36,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: 💾 Save Cache
+        uses: martijnhols/actions-cache/save@v3
         # Only save cache if it was not restored _exactly_ from cache
         if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
