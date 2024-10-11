@@ -54,7 +54,7 @@ export class MongoAdapter
     database: string,
     collection: string,
     filtered: boolean = false,
-    option?: MongoClientOptions,
+    options?: MongoClientOptions,
   ) {
     if (!uri) {
       throw new Error(
@@ -67,7 +67,7 @@ export class MongoAdapter
     this.useFilter = filtered;
 
     try {
-      this.mongoClient = new MongoClient(uri, option);
+      this.mongoClient = new MongoClient(uri, options);
     } catch (error) {
       throw new Error(
         `Failed to create MongoClient: ${(error as Error).message}. Please check your connection string and options.`,
@@ -75,19 +75,25 @@ export class MongoAdapter
     }
   }
 
-  public static async newAdapter(
-    uri: string,
-    database: string,
-    collection: string,
-    filtered: boolean = false,
-    option?: MongoClientOptions,
-  ): Promise<MongoAdapter> {
+  public static async newAdapter({
+    uri,
+    options,
+    database,
+    collection,
+    filtered = false,
+  }: {
+    uri: string;
+    options?: MongoClientOptions;
+    database: string;
+    collection: string;
+    filtered?: boolean;
+  }): Promise<MongoAdapter> {
     const adapter = new MongoAdapter(
       uri,
       database,
       collection,
       filtered,
-      option,
+      options,
     );
     await adapter.open();
     return adapter;

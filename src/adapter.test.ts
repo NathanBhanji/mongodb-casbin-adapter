@@ -36,7 +36,11 @@ describe('MongoAdapter', () => {
   });
 
   beforeEach(async () => {
-    adapter = await MongoAdapter.newAdapter(mongoUri, 'casbin', 'policies');
+    adapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+    });
     const model = new Model();
     model.addDef('r', 'r', 'sub, obj, act');
     model.addDef('p', 'p', 'sub, obj, act');
@@ -192,11 +196,11 @@ describe('MongoAdapter', () => {
     await enforcer.addPolicy('grace', 'data7', 'write');
     await enforcer.savePolicy();
 
-    const newAdapter = await MongoAdapter.newAdapter(
-      mongoUri,
-      'casbin',
-      'policies',
-    );
+    const newAdapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+    });
     const newEnforcerInstance = await newEnforcer(
       enforcer.getModel(),
       newAdapter,
@@ -336,11 +340,11 @@ describe('MongoAdapter', () => {
   });
 
   it('should create the correct indexes on the policies collection', async () => {
-    const newAdapter = await MongoAdapter.newAdapter(
-      mongoUri,
-      'casbin',
-      'testing-indexes',
-    );
+    const newAdapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'testing-indexes',
+    });
 
     const collection = client.db('casbin').collection('testing-indexes');
     const indexes = await collection.indexes();
