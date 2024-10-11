@@ -10,6 +10,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        name: 🛒 Checkout code
 
       - name: 📦 Use Node.js
         uses: actions/setup-node@v3
@@ -21,21 +22,25 @@ jobs:
           corepack enable
           corepack prepare yarn@stable --activate
 
-      - name: 📂 Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v3
-        name: 💾 Cache yarn
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+      - name: ♻️ Restore Cache
+      id: restore-cache
+      uses: martijnhols/actions-cache/restore@v3
+      with:
+        path: .yarn/cache
+        key: yarn-${{ hashFiles('yarn.lock') }}
+        # Stale cache is better than no cache
+        # Note that falling back to the stale cache will set cache-hit to 'false'
+        restore-keys: yarn-
 
       - name: 🏗️  Install dependencies
         run: yarn install --frozen-lockfile
+
+      name: 💾 Save Cache
+      # Only save cache if it was not restored _exactly_ from cache
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      with:
+        path: .yarn/cache
+        key: yarn-${{ hashFiles('yarn.lock') }}
 
       - name: 🧪 Run tests
         run: yarn test
