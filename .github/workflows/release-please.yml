@@ -34,7 +34,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         run: |
           corepack enable
-          corepack prepare yarn@stable --activate
+          corepack install
 
       - name: 🏗️ Install dependencies
         if: ${{ steps.release.outputs.release_created }}
