@@ -1,4 +1,4 @@
-name: PR Checks
+name: 📝 PR Checks
 
 on:
   pull_request:
@@ -11,19 +11,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Use Node.js
+      - name: 📦 Use Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
-      - name: Install Yarn
-        run: npm install -g yarn
+      - name: 🏗️ Install Latest Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
 
-      - name: Get yarn cache directory path
+      - name: 📂 Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v3
+      - uses: 💾 actions/cache@v3
         id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -31,11 +33,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Install dependencies
+      - name: 🏗️  Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run tests
+      - name: 🧪 Run tests
         run: yarn test
 
-      - name: Run linting
+      - name: 📏 Run linting
         run: yarn lint
