@@ -31,5 +31,24 @@
     "mongodb": "^6.9.0",
     "mongodb-memory-server": "^10.1.2",
     "winston": "^3.15.0"
-  }
+  },
+  "version": "1.0.0",
+  "description": "MongoDB adapter for node casbin.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NathanBhanji/mongodb-casbin-adapter.git"
+  },
+  "author": "nathanbhanji",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/NathanBhanji/mongodb-casbin-adapter/issues"
+  },
+  "homepage": "https://github.com/NathanBhanji/mongodb-casbin-adapter#readme",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ]
 }
