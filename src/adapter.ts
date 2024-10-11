@@ -1,3 +1,9 @@
+/*
+ * This file contains code originally licensed under the MIT License (© Rex Isaac Raphael, 2019).
+ * Modifications © Nathan Bhanji, 2024 are licensed under the Apache License, Version 2.0.
+ * For details, see the LICENSE file in the project root.
+ */
+
 import {
   Helper,
   Model,

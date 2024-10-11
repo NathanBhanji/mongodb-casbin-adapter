@@ -41,7 +41,7 @@
     "url": "git+https://github.com/NathanBhanji/mongodb-casbin-adapter.git"
   },
   "author": "nathanbhanji",
-  "license": "Apache-2.0",
+  "license": "(MIT or Apache-2.0)",
   "bugs": {
     "url": "https://github.com/NathanBhanji/mongodb-casbin-adapter/issues"
   },
@@ -49,6 +49,7 @@
   "files": [
     "dist/",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE"
   ]
 }
