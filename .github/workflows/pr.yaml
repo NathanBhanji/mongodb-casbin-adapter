@@ -1,0 +1,50 @@
+name: 📝 PR Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        name: 🛒 Checkout code
+
+      - name: 📦 Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: 🏗️ Install Latest Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+
+      - name: ♻️ Restore Cache
+        id: restore-cache
+        uses: martijnhols/actions-cache/restore@v3
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          # Stale cache is better than no cache
+          # Note that falling back to the stale cache will set cache-hit to 'false'
+          restore-keys: yarn-
+
+      - name: 🏗️  Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 💾 Save Cache
+        uses: martijnhols/actions-cache/save@v3
+        # Only save cache if it was not restored _exactly_ from cache
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+
+      - name: 🧪 Run tests
+        run: yarn test
+
+      - name: 📏 Run linting
+        run: yarn lint
