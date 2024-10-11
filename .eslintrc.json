@@ -7,7 +7,7 @@
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "project": "./tsconfig.json" // Ensure this points to your actual tsconfig.json path
+    "project": "./tsconfig.json"
   },
   "plugins": ["@typescript-eslint", "prettier"],
   "extends": [

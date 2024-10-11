@@ -62,13 +62,11 @@ export class MongoAdapter
       );
     }
 
-    // Cache the mongo uri and db name for later use
     this.databaseName = database;
     this.collectionName = collection;
     this.useFilter = filtered;
 
     try {
-      // Create a new MongoClient
       this.mongoClient = new MongoClient(uri, option);
     } catch (error) {
       throw new Error(
@@ -285,7 +283,6 @@ export class MongoAdapter
       const collection = this.getCollection();
       const existingIndexes = await collection.listIndexes().toArray();
 
-      // Create a compound index for ptype and v0-v5
       const compoundIndexExists = existingIndexes.some(
         (index) => index.name === 'ptype_v0_v1_v2_v3_v4_v5_compound_index',
       );
@@ -295,16 +292,15 @@ export class MongoAdapter
           { ptype: 1, v0: 1, v1: 1, v2: 1, v3: 1, v4: 1, v5: 1 },
           { name: 'ptype_v0_v1_v2_v3_v4_v5_compound_index' },
         );
-        logger.debug('Compound index created for ptype and v0-v5');
+        logger.info('Compound index created for ptype and v0-v5');
       }
 
-      // Create individual indexes for timestamps
       const createdAtIndexExists = existingIndexes.some(
         (index) => index.key && index.key['createdAt'] === 1,
       );
       if (!createdAtIndexExists) {
         await collection.createIndex({ createdAt: 1 });
-        logger.debug('Index created for createdAt');
+        logger.info('Index created for createdAt');
       }
 
       const updatedAtIndexExists = existingIndexes.some(
@@ -312,7 +308,7 @@ export class MongoAdapter
       );
       if (!updatedAtIndexExists) {
         await collection.createIndex({ updatedAt: 1 });
-        logger.debug('Index created for updatedAt');
+        logger.info('Index created for updatedAt');
       }
     } catch (e) {
       throw new Error(
