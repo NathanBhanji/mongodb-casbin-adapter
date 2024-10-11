@@ -23,24 +23,24 @@ jobs:
           corepack prepare yarn@stable --activate
 
       - name: ♻️ Restore Cache
-      id: restore-cache
-      uses: martijnhols/actions-cache/restore@v3
-      with:
-        path: .yarn/cache
-        key: yarn-${{ hashFiles('yarn.lock') }}
-        # Stale cache is better than no cache
-        # Note that falling back to the stale cache will set cache-hit to 'false'
-        restore-keys: yarn-
+        id: restore-cache
+        uses: martijnhols/actions-cache/restore@v3
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          # Stale cache is better than no cache
+          # Note that falling back to the stale cache will set cache-hit to 'false'
+          restore-keys: yarn-
 
       - name: 🏗️  Install dependencies
         run: yarn install --frozen-lockfile
 
-      name: 💾 Save Cache
-      # Only save cache if it was not restored _exactly_ from cache
-      if: steps.restore-cache.outputs.cache-hit != 'true'
-      with:
-        path: .yarn/cache
-        key: yarn-${{ hashFiles('yarn.lock') }}
+      - name: 💾 Save Cache
+        # Only save cache if it was not restored _exactly_ from cache
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
 
       - name: 🧪 Run tests
         run: yarn test
