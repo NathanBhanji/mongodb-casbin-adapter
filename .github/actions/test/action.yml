@@ -1,4 +1,4 @@
-name: 🧪 Run Tests and Upload Coverage
+name: 🧪 Tests
 description: 'Runs tests with coverage and uploads results to Codecov'
 
 inputs:
@@ -9,7 +9,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: 🧪 Run tests with coverage
+    - name: 🧑‍🔬 Run tests
       shell: bash
       run: yarn test --coverage
 

@@ -5,9 +5,9 @@ on:
     branches: [main]
 
 jobs:
-  test-and-lint:
+  tests:
+    name: 🧪 Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: 🛒 Checkout code
         uses: actions/checkout@v4
@@ -15,15 +15,39 @@ jobs:
       - name: 🔧 Setup Environment
         uses: ./.github/actions/setup
 
-      - name: 🧪 Run Tests and Upload Coverage
+      - name: 🧑‍🔬 Run tests and upload coverage
         uses: ./.github/actions/test
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: 📏 Run linting
+  linting:
+    name: 📏 Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
+      - name: 📏 Lint
         run: yarn lint
 
+  formatting:
+    name: ✨ Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
+      - name: 🧑‍🔬 Check formatting
+        run: yarn format:check
+
   build:
+    name: 🏗️ Build
     runs-on: ubuntu-latest
     steps:
       - name: 🛒 Checkout code
@@ -34,3 +58,18 @@ jobs:
 
       - name: 👷 Build package
         run: yarn build
+
+  checks-completed:
+    name: ✅ Checks Completed
+    runs-on: ubuntu-latest
+    needs: [tests, linting, formatting, build]
+    if: always()
+    steps:
+      - name: 🎉 All checks passed
+        run: echo "All required checks have passed!"
+
+      - name: 🚨 PR checks failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "PR checks failed"
+          exit 1
