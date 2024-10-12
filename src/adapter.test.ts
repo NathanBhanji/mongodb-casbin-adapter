@@ -239,15 +239,25 @@ describe('MongoAdapter', () => {
   });
 
   it('should remove policies based on filter', async () => {
-    await enforcer.addPolicy('harry', 'data8', 'read');
-    await enforcer.addPolicy('harry', 'data9', 'write');
-    await enforcer.addPolicy('ivy', 'data10', 'read');
+    const newAdapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+      filtered: true,
+    });
 
-    await enforcer.removeFilteredPolicy(0, 'harry');
+    const filteredEnforcer = await newEnforcer(enforcer.getModel(), newAdapter);
+    filteredEnforcer.loadPolicy();
 
-    const result1 = await enforcer.enforce('harry', 'data8', 'read');
-    const result2 = await enforcer.enforce('harry', 'data9', 'write');
-    const result3 = await enforcer.enforce('ivy', 'data10', 'read');
+    await filteredEnforcer.addPolicy('harry', 'data8', 'read');
+    await filteredEnforcer.addPolicy('harry', 'data9', 'write');
+    await filteredEnforcer.addPolicy('ivy', 'data10', 'read');
+
+    await filteredEnforcer.removeFilteredPolicy(0, 'harry');
+
+    const result1 = await filteredEnforcer.enforce('harry', 'data8', 'read');
+    const result2 = await filteredEnforcer.enforce('harry', 'data9', 'write');
+    const result3 = await filteredEnforcer.enforce('ivy', 'data10', 'read');
 
     expect(result1).toBe(false);
     expect(result2).toBe(false);
@@ -263,6 +273,7 @@ describe('MongoAdapter', () => {
         v2: 'read',
       }),
     );
+    await newAdapter.close();
   });
 
   it('should add multiple policies', async () => {
@@ -370,5 +381,265 @@ describe('MongoAdapter', () => {
       }),
     );
     await newAdapter.close();
+  });
+
+  it('should drop the collection when dropCollectionOnManualSave is true', async () => {
+    const dropCollectionAdapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'drop_test_policies',
+      dropCollectionOnManualSave: true,
+    });
+
+    const model = new Model();
+    model.addDef('r', 'r', 'sub, obj, act');
+    model.addDef('p', 'p', 'sub, obj, act');
+    model.addDef('e', 'e', 'some(where (p.eft == allow))');
+    model.addDef(
+      'm',
+      'm',
+      'r.sub == p.sub && r.obj == p.obj && r.act == p.act',
+    );
+
+    const dropTestEnforcer = await newEnforcer(model, dropCollectionAdapter);
+
+    await dropTestEnforcer.addPolicy('alice', 'data1', 'read');
+    await dropTestEnforcer.addPolicy('bob', 'data2', 'write');
+
+    const dbPolicies = await client
+      .db('casbin')
+      .collection('drop_test_policies')
+      .find({})
+      .toArray();
+    expect(dbPolicies).toHaveLength(2);
+
+    const changeStream = client
+      .db('casbin')
+      .watch([
+        { $match: { operationType: 'drop', 'ns.coll': 'drop_test_policies' } },
+      ]);
+
+    try {
+      let dropDetected = false;
+      changeStream.on('change', (change) => {
+        if (
+          change.operationType === 'drop' &&
+          change.ns.coll === 'drop_test_policies'
+        ) {
+          dropDetected = true;
+        }
+      });
+
+      await dropTestEnforcer.savePolicy();
+
+      expect(dropDetected).toBe(true);
+    } finally {
+      await changeStream.close();
+      await dropCollectionAdapter.close();
+    }
+  });
+
+  it('should throw an error when creating adapter with empty URI', async () => {
+    await expect(
+      MongoAdapter.newAdapter({
+        uri: '',
+        database: 'casbin',
+        collection: 'policies',
+      }),
+    ).rejects.toThrow(
+      'MongoDB URI is required. Please provide a valid connection string.',
+    );
+  });
+
+  it('should throw an error when failing to create MongoClient', async () => {
+    const invalidUri = 'invalid://uri';
+    await expect(
+      MongoAdapter.newAdapter({
+        uri: invalidUri,
+        database: 'casbin',
+        collection: 'policies',
+      }),
+    ).rejects.toThrow(/Failed to create MongoClient:/);
+  });
+
+  it('should throw an error when failing to load filtered policy', async () => {
+    const adapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+      filtered: true,
+    });
+
+    const model = new Model();
+
+    jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
+      throw new Error('Database error');
+    });
+
+    await expect(adapter.loadFilteredPolicy(model)).rejects.toThrow(
+      /Failed to load filtered policy:/,
+    );
+    await adapter.close();
+  });
+
+  it('should throw an error when failing to create collection or indexes', async () => {
+    const adapter = new MongoAdapter(mongoUri, 'casbin', 'policies');
+
+    jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
+      throw new Error('Database error');
+    });
+
+    await expect(adapter.createDBIndex()).rejects.toThrow(
+      /Failed to create collection or database indexes:/,
+    );
+    await adapter.close();
+  });
+
+  it('should throw an error when failing to open MongoDB connection', async () => {
+    await expect(
+      MongoAdapter.newAdapter({
+        uri: 'mongodb://invalid-host:27017',
+        database: 'casbin',
+        collection: 'policies',
+        options: {
+          serverSelectionTimeoutMS: 1000,
+        },
+      }),
+    ).rejects.toThrow(/Failed to open MongoDB connection and create indexes:/);
+  });
+
+  it('should throw an error when failing to get collection', async () => {
+    const adapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+    });
+
+    jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
+      throw new Error('Database error');
+    });
+
+    expect(() => adapter['getCollection']()).toThrow(
+      /Failed to get collection 'policies':/,
+    );
+    await adapter.close();
+  });
+
+  it('should throw an error when failing to get database', async () => {
+    const adapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+    });
+
+    jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
+      throw new Error('Client error');
+    });
+
+    expect(() => adapter['getDatabase']()).toThrow(
+      /Failed to get database 'casbin':/,
+    );
+    await adapter.close();
+  });
+
+  it('should throw an error when failing to clear collection', async () => {
+    const adapter = await MongoAdapter.newAdapter({
+      uri: mongoUri,
+      database: 'casbin',
+      collection: 'policies',
+    });
+
+    jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
+      throw new Error('Database error');
+    });
+
+    await expect(adapter['clearCollection']()).rejects.toThrow(
+      /Failed to clear collection 'policies':/,
+    );
+    await adapter.close();
+  });
+
+  it('should throw an error when calling close() without an active connection', async () => {
+    const adapter = new MongoAdapter(mongoUri, 'casbin', 'policies');
+
+    adapter['mongoClient'].close = jest
+      .fn()
+      .mockRejectedValue(new Error('Not connected'));
+
+    await expect(adapter.close()).rejects.toThrow(
+      'Failed to close MongoDB connection: Not connected. Please ensure the client is connected before closing.',
+    );
+  });
+
+  it('should update policy from an older more complex version to a simpler version and remove unused fields while preserving createdAt', async () => {
+    const model = new Model();
+    model.addDef('r', 'r', 'sub, obj, act, type, owner');
+    model.addDef('p', 'p', 'sub, obj, act, type, owner');
+    model.addDef('e', 'e', 'some(where (p.eft == allow))');
+    model.addDef(
+      'm',
+      'm',
+      'r.sub == p.sub && r.obj == p.obj && r.act == p.act && r.type == p.type && r.owner == p.owner',
+    );
+
+    const v5Enforcer = await newEnforcer(model, adapter);
+
+    await v5Enforcer.addPolicy(
+      'alice',
+      'data1',
+      'read',
+      'confidential',
+      'admin',
+    );
+
+    let dbPolicies = await getDbPolicies();
+    expect(dbPolicies).toHaveLength(1);
+    const originalCreatedAt = dbPolicies[0]?.['createdAt'];
+    expect(dbPolicies[0]).toEqual(
+      expect.objectContaining({
+        ptype: 'p',
+        v0: 'alice',
+        v1: 'data1',
+        v2: 'read',
+        v3: 'confidential',
+        v4: 'admin',
+        createdAt: expect.any(Date),
+      }),
+    );
+
+    const updatedModel = new Model();
+    updatedModel.addDef('r', 'r', 'sub, obj, act');
+    updatedModel.addDef('p', 'p', 'sub, obj, act');
+    updatedModel.addDef('e', 'e', 'some(where (p.eft == allow))');
+    updatedModel.addDef(
+      'm',
+      'm',
+      'r.sub == p.sub && r.obj == p.obj && r.act == p.act',
+    );
+
+    const v3Enforcer = await newEnforcer(updatedModel, adapter);
+
+    await v3Enforcer.updatePolicy(
+      ['alice', 'data1', 'read', 'confidential', 'admin'],
+      ['alice', 'data1', 'read'],
+    );
+
+    dbPolicies = await getDbPolicies();
+    expect(dbPolicies).toHaveLength(1);
+    expect(dbPolicies[0]).toEqual(
+      expect.objectContaining({
+        ptype: 'p',
+        v0: 'alice',
+        v1: 'data1',
+        v2: 'read',
+        createdAt: originalCreatedAt,
+      }),
+    );
+    expect(dbPolicies[0]).not.toHaveProperty('v3');
+    expect(dbPolicies[0]).not.toHaveProperty('v4');
+    expect(dbPolicies[0]?.['createdAt']).toEqual(originalCreatedAt);
+
+    const result = await v3Enforcer.enforce('alice', 'data1', 'read');
+    expect(result).toBe(true);
   });
 });
