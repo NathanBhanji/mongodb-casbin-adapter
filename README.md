@@ -1,5 +1,9 @@
 # MongoDB Adapter for Node Casbin
 
+[![Build Status](https://github.com/NathanBhanji/mongodb-casbin-adapter/actions/workflows/build.yaml/badge.svg)](https://github.com/NathanBhanji/mongodb-casbin-adapter/actions?query=workflow%3ABuild+branch%3Amain)
+[![codecov](https://codecov.io/gh/NathanBhanji/mongodb-casbin-adapter/branch/main/graph/badge.svg?token=1FILR9FBF6)](https://codecov.io/gh/NathanBhanji/mongodb-casbin-adapter)
+[![Known Vulnerabilities](https://snyk.io/test/github/NathanBhanji/mongodb-casbin-adapter/badge.svg)](https://snyk.io/test/github/NathanBhanji/mongodb-casbin-adapter)
+
 This is a MongoDB adapter for [Node Casbin](https://github.com/casbin/node-casbin). It provides policy storage and management using MongoDB for Casbin.
 
 ## Features
