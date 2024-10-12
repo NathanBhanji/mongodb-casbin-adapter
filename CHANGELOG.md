@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/NathanBhanji/mongodb-casbin-adapter/compare/v1.0.0...v1.0.1) (2024-10-12)
+
+
+### Bug Fixes
+
+* refactor removeFilteredPolicy for consistency ([#15](https://github.com/NathanBhanji/mongodb-casbin-adapter/issues/15)) ([cc38b5f](https://github.com/NathanBhanji/mongodb-casbin-adapter/commit/cc38b5f3cb01061d5bee06baef83d27e30a7c067))
+
 ## 1.0.0 (2024-10-12)
 
 
