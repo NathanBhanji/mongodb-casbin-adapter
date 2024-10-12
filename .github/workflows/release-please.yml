@@ -23,22 +23,9 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/checkout@v4
 
-      - name: 📦 Use Node.js
+      - name: 🔧 Setup Environment
         if: ${{ steps.release.outputs.release_created }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: 🧶 Install Yarn
-        if: ${{ steps.release.outputs.release_created }}
-        run: |
-          corepack enable
-          corepack install
-
-      - name: 🏗️ Install dependencies
-        if: ${{ steps.release.outputs.release_created }}
-        run: yarn install --immutable
+        uses: ./.github/actions/setup
 
       - name: 👷 Build package
         if: ${{ steps.release.outputs.release_created }}
@@ -49,3 +36,19 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  test:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
+      - name: 🧪 Run Tests and Upload Coverage
+        uses: ./.github/actions/test
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}

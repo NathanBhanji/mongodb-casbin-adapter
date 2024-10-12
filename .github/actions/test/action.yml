@@ -1,0 +1,19 @@
+name: 🧪 Run Tests and Upload Coverage
+description: 'Runs tests with coverage and uploads results to Codecov'
+
+inputs:
+  codecov-token:
+    description: 'Codecov token for uploading coverage results'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🧪 Run tests with coverage
+      shell: bash
+      run: yarn test --coverage
+
+    - name: 📊 Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ inputs.codecov-token }}

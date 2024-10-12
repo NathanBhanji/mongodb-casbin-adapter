@@ -15,3 +15,6 @@ node_modules
 
 # Dist
 dist
+
+# Coverage
+coverage
