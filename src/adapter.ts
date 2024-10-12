@@ -260,29 +260,15 @@ export class MongoAdapter
     ptype: string,
     fieldIndex: number,
     ...fieldValues: string[]
-  ) {
-    const line: CasbinRule = {};
+  ): Promise<void> {
+    const line: CasbinRule = { ptype };
 
-    line.ptype = ptype;
+    for (let i = 0; i < 6; i++) {
+      if (fieldIndex <= i && i < fieldIndex + fieldValues.length) {
+        line[`v${i}` as keyof CasbinRule] = fieldValues[i - fieldIndex]!;
+      }
+    }
 
-    if (fieldIndex <= 0 && 0 < fieldIndex + fieldValues.length) {
-      line.v0 = fieldValues[0 - fieldIndex]!;
-    }
-    if (fieldIndex <= 1 && 1 < fieldIndex + fieldValues.length) {
-      line.v1 = fieldValues[1 - fieldIndex]!;
-    }
-    if (fieldIndex <= 2 && 2 < fieldIndex + fieldValues.length) {
-      line.v2 = fieldValues[2 - fieldIndex]!;
-    }
-    if (fieldIndex <= 3 && 3 < fieldIndex + fieldValues.length) {
-      line.v3 = fieldValues[3 - fieldIndex]!;
-    }
-    if (fieldIndex <= 4 && 4 < fieldIndex + fieldValues.length) {
-      line.v4 = fieldValues[4 - fieldIndex]!;
-    }
-    if (fieldIndex <= 5 && 5 < fieldIndex + fieldValues.length) {
-      line.v5 = fieldValues[5 - fieldIndex]!;
-    }
     await this.getCollection().deleteMany(line);
   }
 
