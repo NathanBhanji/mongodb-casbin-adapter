@@ -3,44 +3,24 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  pull-requests: write
-
-name: release-please
+name: 🚀 Release
 
 jobs:
   release-please:
+    name: 🤖 Release Please
     runs-on: ubuntu-latest
     steps:
-      - name: 🚀 Release Please
+      - name: 🤖 Release Please
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           release-type: node
 
-      - name: 🛒 Checkout code
-        if: ${{ steps.release.outputs.release_created }}
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Environment
-        if: ${{ steps.release.outputs.release_created }}
-        uses: ./.github/actions/setup
-
-      - name: 👷 Build package
-        if: ${{ steps.release.outputs.release_created }}
-        run: yarn build
-
-      - name: 📤 Publish package
-        if: ${{ steps.release.outputs.release_created }}
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  test:
+  release:
+    name: 🚀 Release
+    runs-on: ubuntu-latest
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
-    runs-on: ubuntu-latest
     steps:
       - name: 🛒 Checkout code
         uses: actions/checkout@v4
@@ -48,7 +28,27 @@ jobs:
       - name: 🔧 Setup Environment
         uses: ./.github/actions/setup
 
-      - name: 🧪 Run Tests and Upload Coverage
+      - name: 👷 Build package
+        run: yarn build
+
+      - name: 📤 Publish package
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  test:
+    name: 📊 Test Coverage
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
+      - name: 🧑‍🔬 Run tests and upload coverage
         uses: ./.github/actions/test
         with:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
