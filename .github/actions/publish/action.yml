@@ -1,0 +1,23 @@
+name: 🚀 Publish
+description: builds and publishes the package
+
+inputs:
+  npm-token:
+    description: 'NPM token for publishing'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🔧 Setup Environment
+      uses: ./.github/actions/setup
+
+    - name: 👷 Build package
+      shell: bash
+      run: yarn build
+
+    - name: 📤 Publish package
+      shell: bash
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.npm-token }}
