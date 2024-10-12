@@ -1,0 +1,22 @@
+name: 📊 Test Coverage
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage:
+    name: 📊 Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
+      - name: 🧑‍🔬 Run tests and upload coverage
+        uses: ./.github/actions/test
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
