@@ -19,6 +19,10 @@ jobs:
           token: ${{ secrets.MY_RELEASE_PLEASE_TOKEN }}
           release-type: node
 
+      - name: 🛒 Checkout code
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+
       - name: 🔧 Setup Environment
         if: ${{ steps.release.outputs.release_created }}
         uses: ./.github/actions/setup
@@ -38,6 +42,12 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
+      - name: 🛒 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
       - name: 🧪 Run Tests and Upload Coverage
         uses: ./.github/actions/test
         with:

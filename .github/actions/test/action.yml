@@ -9,9 +9,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: 🔧 Setup Environment
-      uses: ./.github/actions/setup
-
     - name: 🧪 Run tests with coverage
       shell: bash
       run: yarn test --coverage
