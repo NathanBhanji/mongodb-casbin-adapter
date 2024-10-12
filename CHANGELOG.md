@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/NathanBhanji/mongodb-casbin-adapter/compare/v1.0.1...v1.0.2) (2024-10-12)
+
+
+### Bug Fixes
+
+* move mongo memory server to dev deps ([#17](https://github.com/NathanBhanji/mongodb-casbin-adapter/issues/17)) ([79abb2b](https://github.com/NathanBhanji/mongodb-casbin-adapter/commit/79abb2b670a0df4c3c6a75514c65c3e03a8f1c0c))
+
 ## [1.0.1](https://github.com/NathanBhanji/mongodb-casbin-adapter/compare/v1.0.0...v1.0.1) (2024-10-12)
 
 
