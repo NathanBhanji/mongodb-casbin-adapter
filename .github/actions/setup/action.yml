@@ -1,0 +1,30 @@
+name: 🔧 Setup Environment
+description: 'Checks out code, sets up Node.js, Yarn, and installs dependencies'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: 20
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🛒 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 📦 Use Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://registry.npmjs.org'
+
+    - name: 🧶 Install Yarn
+      shell: bash
+      run: |
+        corepack enable
+        corepack install
+
+    - name: 🏗️ Install dependencies
+      shell: bash
+      run: yarn install --immutable

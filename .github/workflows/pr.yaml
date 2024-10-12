@@ -9,24 +9,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🛒 Checkout code
-        uses: actions/checkout@v4
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
 
-      - name: 📦 Use Node.js
-        uses: actions/setup-node@v4
+      - name: 🧪 Run Tests and Upload Coverage
+        uses: ./.github/actions/test
         with:
-          node-version: '20'
-
-      - name: 🧶 Install Yarn
-        run: |
-          corepack enable
-          corepack install
-
-      - name: 🏗️ Install dependencies
-        run: yarn install --immutable
-
-      - name: 🧪 Run tests
-        run: yarn test
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: 📏 Run linting
         run: yarn lint
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔧 Setup Environment
+        uses: ./.github/actions/setup
+
+      - name: 👷 Build package
+        run: yarn build
