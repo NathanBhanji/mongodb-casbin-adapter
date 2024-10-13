@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/NathanBhanji/mongodb-casbin-adapter/compare/v1.0.2...v2.0.0) (2024-10-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* index creation is no longer public ([#19](https://github.com/NathanBhanji/mongodb-casbin-adapter/issues/19))
+
+### Bug Fixes
+
+* don't throw on index creation ([#19](https://github.com/NathanBhanji/mongodb-casbin-adapter/issues/19)) ([f89fb28](https://github.com/NathanBhanji/mongodb-casbin-adapter/commit/f89fb28faa817e40c29b52125c7607db7f6136a8))
+
 ## [1.0.2](https://github.com/NathanBhanji/mongodb-casbin-adapter/compare/v1.0.1...v1.0.2) (2024-10-12)
 
 
