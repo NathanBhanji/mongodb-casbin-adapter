@@ -3,6 +3,7 @@ import { MongoClient } from 'mongodb';
 import { newEnforcer, Enforcer, Model } from 'casbin';
 import { MongoAdapter } from './adapter';
 import { MongoServerError } from 'mongodb';
+import { Logger } from 'winston';
 
 describe('MongoAdapter', () => {
   let mongoServer: MongoMemoryReplSet;
@@ -446,9 +447,7 @@ describe('MongoAdapter', () => {
         database: 'casbin',
         collection: 'policies',
       }),
-    ).rejects.toThrow(
-      'MongoDB URI is required. Please provide a valid connection string.',
-    );
+    ).rejects.toThrow('MongoDB URI is required.');
   });
 
   it('should throw an error when failing to create MongoClient', async () => {
@@ -482,16 +481,38 @@ describe('MongoAdapter', () => {
     await adapter.close();
   });
 
-  it('should throw an error when failing to create collection or indexes', async () => {
+  it('should throw an error when failing to create collection', async () => {
     const adapter = new MongoAdapter(mongoUri, 'casbin', 'policies');
 
     jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
       throw new Error('Database error');
     });
 
-    await expect(adapter.createDBIndex()).rejects.toThrow(
-      /Failed to create collection or database indexes:/,
+    await expect(adapter['createCollection']()).rejects.toThrow(
+      /Failed to create collection 'policies':/,
     );
+
+    await adapter.close();
+  });
+
+  it('should log an error when failing to create indexes', async () => {
+    const adapter = new MongoAdapter(mongoUri, 'casbin', 'policies');
+
+    const mockLogger = {
+      info: jest.fn(),
+      error: jest.fn(),
+    };
+
+    adapter['logger'] = mockLogger as unknown as Logger;
+
+    jest.spyOn(adapter['mongoClient'], 'db').mockImplementationOnce(() => {
+      throw new Error('Mock database error');
+    });
+
+    await adapter['createIndexes']();
+
+    expect(mockLogger.error).toHaveBeenCalled();
+
     await adapter.close();
   });
 
@@ -505,7 +526,9 @@ describe('MongoAdapter', () => {
           serverSelectionTimeoutMS: 1000,
         },
       }),
-    ).rejects.toThrow(/Failed to open MongoDB connection and create indexes:/);
+    ).rejects.toThrow(
+      /Failed to open MongoDB connection and create collection:/,
+    );
   });
 
   it('should throw an error when failing to get collection', async () => {
@@ -567,7 +590,7 @@ describe('MongoAdapter', () => {
       .mockRejectedValue(new Error('Not connected'));
 
     await expect(adapter.close()).rejects.toThrow(
-      'Failed to close MongoDB connection: Not connected. Please ensure the client is connected before closing.',
+      /Failed to close MongoDB connection:/,
     );
   });
 
