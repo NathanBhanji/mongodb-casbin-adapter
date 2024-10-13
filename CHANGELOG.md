@@ -5,7 +5,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* don't throw on index creation ([#19](https://github.com/NathanBhanji/mongodb-casbin-adapter/issues/19))
+* index creation is no longer public ([#19](https://github.com/NathanBhanji/mongodb-casbin-adapter/issues/19))
 
 ### Bug Fixes
 
