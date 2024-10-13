@@ -18,7 +18,7 @@ import {
   Db,
   Filter,
 } from 'mongodb';
-import winston from 'winston';
+import winston, { Logger } from 'winston';
 
 interface CasbinRule {
   ptype?: string;
@@ -37,12 +37,25 @@ interface CasbinRuleWithUpdatedAt extends CasbinRule {
 interface CasbinRuleWithTimestamps extends CasbinRuleWithUpdatedAt {
   createdAt: Date;
 }
+class MongoAdapterError extends Error {
+  constructor(
+    message: string,
+    public override readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'MongoAdapterError';
 
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.simple(),
-  transports: [new winston.transports.Console()],
-});
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, MongoAdapterError);
+    }
+
+    // Preserves the original error's stack if available
+    if (cause instanceof Error && cause.stack) {
+      this.stack = `${this.stack}\n\nCaused by:\n${cause.stack}`;
+    }
+  }
+}
 
 /**
  * MongoAdapter represents the MongoDB adapter for policy storage.
@@ -54,6 +67,7 @@ export class MongoAdapter
   private readonly mongoClient: MongoClient;
   private readonly collectionName: string;
   private readonly dropCollectionOnManualSave: boolean;
+  private logger: Logger;
   public useFilter: boolean = false;
 
   constructor(
@@ -65,9 +79,7 @@ export class MongoAdapter
     dropCollectionOnManualSave: boolean = false,
   ) {
     if (!uri) {
-      throw new Error(
-        'MongoDB URI is required. Please provide a valid connection string.',
-      );
+      throw new MongoAdapterError('MongoDB URI is required.');
     }
 
     this.databaseName = database;
@@ -75,12 +87,16 @@ export class MongoAdapter
     this.useFilter = filtered;
     this.dropCollectionOnManualSave = dropCollectionOnManualSave;
 
+    this.logger = winston.createLogger({
+      level: 'info',
+      format: winston.format.simple(),
+      transports: [new winston.transports.Console()],
+    });
+
     try {
       this.mongoClient = new MongoClient(uri, options);
     } catch (error) {
-      throw new Error(
-        `Failed to create MongoClient: ${(error as Error).message}. Please check your connection string and options.`,
-      );
+      throw this.wrapError(error, 'Failed to create MongoClient');
     }
   }
 
@@ -119,9 +135,7 @@ export class MongoAdapter
     try {
       await this.mongoClient.close();
     } catch (error) {
-      throw new Error(
-        `Failed to close MongoDB connection: ${(error as Error).message}. Please ensure the client is connected before closing.`,
-      );
+      throw this.wrapError(error, 'Failed to close MongoDB connection');
     }
   }
 
@@ -139,10 +153,8 @@ export class MongoAdapter
     try {
       const lines = await this.getFilteredPolicyLines(filter);
       lines.forEach((line) => this.loadPolicyLine(line as CasbinRule, model));
-    } catch (e) {
-      throw new Error(
-        `Failed to load filtered policy: ${(e as Error).message}. Please check your filter and database connection.`,
-      );
+    } catch (error) {
+      throw this.wrapError(error, 'Failed to load filtered policy');
     }
   }
 
@@ -272,7 +284,7 @@ export class MongoAdapter
     await this.getCollection().deleteMany(line);
   }
 
-  public async createDBIndex() {
+  private async createCollection() {
     try {
       const db = this.getDatabase();
       const collectionExists = await db
@@ -281,9 +293,18 @@ export class MongoAdapter
 
       if (!collectionExists) {
         await db.createCollection(this.collectionName);
-        logger.info(`Collection '${this.collectionName}' created`);
+        this.logger.info(`Collection '${this.collectionName}' created`);
       }
+    } catch (error) {
+      throw this.wrapError(
+        error,
+        `Failed to create collection '${this.collectionName}'`,
+      );
+    }
+  }
 
+  private async createIndexes() {
+    try {
       const collection = this.getCollection();
       const existingIndexes = await collection.listIndexes().toArray();
 
@@ -296,7 +317,7 @@ export class MongoAdapter
           { ptype: 1, v0: 1, v1: 1, v2: 1, v3: 1, v4: 1, v5: 1 },
           { name: 'ptype_v0_v1_v2_v3_v4_v5_compound_index' },
         );
-        logger.info('Compound index created for ptype and v0-v5');
+        this.logger.info('Compound index created for ptype and v0-v5');
       }
 
       const createdAtIndexExists = existingIndexes.some(
@@ -304,7 +325,7 @@ export class MongoAdapter
       );
       if (!createdAtIndexExists) {
         await collection.createIndex({ createdAt: 1 });
-        logger.info('Index created for createdAt');
+        this.logger.info('Index created for createdAt');
       }
 
       const updatedAtIndexExists = existingIndexes.some(
@@ -312,22 +333,22 @@ export class MongoAdapter
       );
       if (!updatedAtIndexExists) {
         await collection.createIndex({ updatedAt: 1 });
-        logger.info('Index created for updatedAt');
+        this.logger.info('Index created for updatedAt');
       }
-    } catch (e) {
-      throw new Error(
-        `Failed to create collection or database indexes: ${(e as Error).message}. Please check your database permissions and connection.`,
-      );
+    } catch (error) {
+      this.logger.error('Failed to create database indexes:', { error });
     }
   }
 
-  async open() {
+  public async open() {
     try {
       await this.mongoClient.connect();
-      await this.createDBIndex();
+      await this.createCollection();
+      await this.createIndexes();
     } catch (error) {
-      throw new Error(
-        `Failed to open MongoDB connection and create indexes: ${(error as Error).message}. Please check your connection string and database permissions.`,
+      throw this.wrapError(
+        error,
+        'Failed to open MongoDB connection and create collection',
       );
     }
   }
@@ -338,8 +359,9 @@ export class MongoAdapter
         .db(this.databaseName)
         .collection(this.collectionName);
     } catch (error) {
-      throw new Error(
-        `Failed to get collection '${this.collectionName}': ${(error as Error).message}. Please check your database and collection names.`,
+      throw this.wrapError(
+        error,
+        `Failed to get collection '${this.collectionName}'`,
       );
     }
   }
@@ -348,8 +370,9 @@ export class MongoAdapter
     try {
       return this.mongoClient.db(this.databaseName);
     } catch (error) {
-      throw new Error(
-        `Failed to get database '${this.databaseName}': ${(error as Error).message}. Please check your database name and connection.`,
+      throw this.wrapError(
+        error,
+        `Failed to get database '${this.databaseName}'`,
       );
     }
   }
@@ -368,8 +391,9 @@ export class MongoAdapter
         await this.getCollection().deleteMany({});
       }
     } catch (error) {
-      throw new Error(
-        `Failed to clear collection '${this.collectionName}': ${(error as Error).message}. Please check your database permissions and connection.`,
+      throw this.wrapError(
+        error,
+        `Failed to clear collection '${this.collectionName}'`,
       );
     }
   }
@@ -448,5 +472,10 @@ export class MongoAdapter
       ...this.extractPolicyRules(model, 'p'),
       ...this.extractPolicyRules(model, 'g'),
     ];
+  }
+
+  private wrapError(error: unknown, context: string): MongoAdapterError {
+    const message = error instanceof Error ? error.message : String(error);
+    return new MongoAdapterError(`${context}: ${message}`, error);
   }
 }
