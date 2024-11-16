@@ -30,7 +30,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "casbin": "^5.31.0",
+    "casbin": "^5.32.0",
     "mongodb": "^6.9.0",
     "winston": "^3.15.0"
   },
