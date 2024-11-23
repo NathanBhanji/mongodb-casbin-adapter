@@ -32,7 +32,7 @@
   "dependencies": {
     "casbin": "^5.31.0",
     "mongodb": "^6.9.0",
-    "winston": "^3.15.0"
+    "winston": "^3.16.0"
   },
   "version": "2.0.0",
   "description": "MongoDB adapter for node casbin.",
